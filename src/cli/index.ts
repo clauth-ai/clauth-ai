@@ -150,13 +150,16 @@ async function cmdInit(args: string[]): Promise<void> {
 
   await saveConfig(config);
 
+  const paths = resolveClauthPaths();
+  await ensureDir(paths.homeDir);
+
+  // Remove existing vault so init always creates a fresh one
+  await fs.rm(paths.vaultFile, { force: true });
+
   const passphrase = await resolvePassphrase({ promptIfMissing: true, promptLabel: "Create vault passphrase" });
   const vault = new Vault(config);
   await vault.unlock(passphrase);
   vault.lock();
-
-  const paths = resolveClauthPaths();
-  await ensureDir(paths.homeDir);
   await ensureFile(paths.scopeFile, JSON.stringify({ grants: [] }, null, 2));
   await ensureFile(paths.auditFile, "");
   await ensureFile(paths.firewallFile, JSON.stringify({ skills: {} }, null, 2));
@@ -1419,20 +1422,44 @@ function promptHidden(prompt: string): Promise<string> {
   return new Promise((resolve) => {
     process.stdout.write(prompt);
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    }) as readline.Interface & { _writeToOutput?: (value: string) => void };
+    const { stdin } = process;
+    const wasRaw = stdin.isRaw;
+    if (stdin.isTTY) {
+      stdin.setRawMode(true);
+    }
+    stdin.resume();
+    stdin.setEncoding("utf8");
 
-    rl._writeToOutput = function writeToOutput(_value: string): void {
-      process.stdout.write("*");
+    let input = "";
+    let done = false;
+    const onData = (data: string): void => {
+      for (const ch of data) {
+        if (done) break;
+        if (ch === "\r" || ch === "\n") {
+          done = true;
+          stdin.removeListener("data", onData);
+          if (stdin.isTTY) {
+            stdin.setRawMode(wasRaw ?? false);
+          }
+          stdin.pause();
+          process.stdout.write("\n");
+          resolve(input.trim());
+          return;
+        } else if (ch === "\u007F" || ch === "\b") {
+          if (input.length > 0) {
+            input = input.slice(0, -1);
+            process.stdout.write("\b \b");
+          }
+        } else if (ch === "\u0003") {
+          process.exit(1);
+        } else {
+          input += ch;
+          process.stdout.write("*");
+        }
+      }
     };
 
-    rl.question("", (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer.trim());
-    });
+    stdin.on("data", onData);
   });
 }
 
