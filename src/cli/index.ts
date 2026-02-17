@@ -1417,27 +1417,18 @@ function isLoopbackHost(host: string): boolean {
 
 function promptHidden(prompt: string): Promise<string> {
   return new Promise((resolve) => {
+    process.stdout.write(prompt);
+
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
-    }) as readline.Interface & { stdoutMuted?: boolean; _writeToOutput?: (value: string) => void };
+    }) as readline.Interface & { _writeToOutput?: (value: string) => void };
 
-    rl.stdoutMuted = true;
-    const originalWrite = rl._writeToOutput?.bind(rl);
-    rl._writeToOutput = function writeToOutput(this: typeof rl, value: string): void {
-      if (this.stdoutMuted) {
-        process.stdout.write("*");
-        return;
-      }
-      if (originalWrite) {
-        originalWrite(value);
-      } else {
-        process.stdout.write(value);
-      }
+    rl._writeToOutput = function writeToOutput(_value: string): void {
+      process.stdout.write("*");
     };
 
-    rl.question(prompt, (answer) => {
-      rl.stdoutMuted = false;
+    rl.question("", (answer) => {
       rl.close();
       process.stdout.write("\n");
       resolve(answer.trim());
