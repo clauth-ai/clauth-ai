@@ -1,0 +1,35 @@
+[Unit]
+Description=Clauth Credential Proxy and Behavioral Firewall
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=clauth
+Group=clauth
+WorkingDirectory=/opt/clauth
+ExecStart=/usr/bin/node /opt/clauth/dist/daemon/server.js
+EnvironmentFile=/etc/clauth/clauth.env
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/clauth/.clauth
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+SystemCallFilter=@system-service
+MemoryDenyWriteExecute=true
+LockPersonality=true
+RestrictRealtime=true
+ProtectClock=true
+ProtectHostname=true
+
+[Install]
+WantedBy=multi-user.target

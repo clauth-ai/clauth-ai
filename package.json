@@ -1,0 +1,57 @@
+{
+  "name": "clauth-ai",
+  "version": "0.1.0",
+  "description": "Credential proxy and behavioral firewall for AI agents",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clauth-ai/clauth-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clauth-ai/clauth-ai/issues"
+  },
+  "homepage": "https://github.com/clauth-ai/clauth-ai#readme",
+  "keywords": [
+    "agent",
+    "authentication",
+    "credentials",
+    "proxy",
+    "security",
+    "secrets",
+    "tokens"
+  ],
+  "bin": {
+    "clauth": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": "./dist/client/index.js",
+    "./client": "./dist/client/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "node --experimental-strip-types --import ./scripts/register-loader.mjs src/daemon/server.ts",
+    "cli": "node --experimental-strip-types --import ./scripts/register-loader.mjs src/cli/index.ts",
+    "start": "node dist/daemon/server.js",
+    "test": "node --experimental-strip-types --import ./scripts/register-loader.mjs --test test/**/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "build:site": "node --experimental-strip-types --import ./scripts/register-loader.mjs site/build.ts",
+    "prepack": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && npm run build"
+  },
+  "files": [
+    "dist/**",
+    "public/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
